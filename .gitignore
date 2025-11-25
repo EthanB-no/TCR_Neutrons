@@ -1,0 +1,7 @@
+*.png
+*.xlsx
+*.rds
+Combined_data/
+results/
+renv/
+*.csv

@@ -1,0 +1,13 @@
+*.png
+*.xlsx
+*.rds
+Combined_data/
+results/
+renv/
+*.csv
+*.python-version
+*.Rhistory
+*.RData
+*.Rproj.user/
+*.Rprofile
+*.DS_Store

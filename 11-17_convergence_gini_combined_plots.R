@@ -10,11 +10,10 @@ imm_data <- repLoad("./Combined_data/")
 imm_meta <- read_xlsx("PatientID.xlsx") 
 
 
-
-
 # Diversity (Gini-Simpson)
 ginisimp <- repDiversity(imm_data$data, .method = "gini.simp")
 
+#add info from metadata 
 clonality_annotated <- ginisimp %>%
   left_join(
     imm_meta %>% select(Sample, PatientID, Timepoint, Response), 
@@ -23,7 +22,7 @@ clonality_annotated <- ginisimp %>%
   mutate(Timepoint = factor(Timepoint,
                             levels = c("Pre-TX", "Post Rad", "4 Week", "16 Week")))
 
-# Response grouping
+#group by response
 gini_response <- clonality_annotated %>%
   mutate(Response = na_if(Response, "NA")) %>%
   mutate(Response_Group = case_when(
@@ -62,6 +61,7 @@ convergence_with_response <- convergence_summary %>%
   )) %>%
   distinct(PatientID, num_convergent_clonotypes, .keep_all = TRUE) %>%
   filter(!is.na(Response_Group)) 
+
 
 # Helper function for plots
 make_boxplot <- function(df, xvar, yvar, title, ylab) {

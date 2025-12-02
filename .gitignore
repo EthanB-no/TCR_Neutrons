@@ -5,9 +5,11 @@ Combined_data/
 results/
 renv/
 *.csv
+*.tsv
 *.python-version
 *.Rhistory
 *.RData
 *.Rproj.user/
 *.Rprofile
 *.DS_Store
+.Rproj.user

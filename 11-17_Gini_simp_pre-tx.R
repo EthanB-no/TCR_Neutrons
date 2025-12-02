@@ -6,17 +6,16 @@ library(dplyr)
 library(readxl)
 library(readr)
 
-# Load your data from the './Data/' directory
+
 imm_data <- repLoad("./Combined_data//")
 
-# Read your metadata file — must contain a 'Sample' column matching the filenames
 meta <- read_xlsx("PatientID.xlsx") 
 write.table(meta, file = "./Combined_data//metadata.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 
-# Use the names of the data list to set the Sample column
+
+
 imm_meta <- imm_data$meta
 imm_meta$Sample <- names(imm_data$data)
-# assuming you have meta and patient_map loaded as data.frames
 meta_new <- meta
 
 # Compute gini simpson
@@ -33,7 +32,7 @@ clonality_annotated <- ginisimp %>%
     )
   )
 
-# Recode Response into two categories
+
 gini_response <- clonality_annotated %>%
   mutate(Response_group = ifelse(Response == "PD", "Progression", "Non-Progression"))
 
@@ -47,7 +46,6 @@ gini_response <- gini_response %>%
 
 
 # Subset to Pre-TX and remove NAs
-
 gini_pretx_clean <- gini_response %>%
   filter(Timepoint == "Pre-TX", !is.na(Response_group))
 

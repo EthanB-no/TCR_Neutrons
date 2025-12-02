@@ -8,15 +8,12 @@ library(readr)
 library(tidyr)
 library(ggpubr)
 
-# Read your metadata file — must contain a 'Sample' column matching the filenames
+#read in
 meta <- read_xlsx("PatientID.xlsx") 
-#write.table(meta, file = "./Data2/metadata.txt", sep = "\t", quote = FALSE, row.names = FALSE)
-
-# Load your data from the './Data/' directory
 imm_data <- repLoad("./Combined_data//")
+CK_data <- read_csv("CK_data(Sheet1).csv") #cytokine data
 
-#load CK data 
-CK_data <- read_csv("CK_data(Sheet1).csv")
+
 
 CK1 <- CK_data[CK_data$Response != "NA", ] %>%
   mutate(

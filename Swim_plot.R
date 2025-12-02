@@ -2,7 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(readr)
 
-# Load data
+
 clinical_data <- read_csv("./swimmer_plot.csv")
 
 # Prepare the data
@@ -57,7 +57,7 @@ ggplot(clinical_data, aes(y = PatientID)) +
                      labels = c("Censored", "Event"),
                      name = "OS Status") +
   
-  # Aesthetic polish
+  
   labs(
     x = "Months",
     y = "Patient ID",
@@ -97,7 +97,7 @@ timeline_plot <- ggplot(clinical_data, aes(y = PatientID)) +
     size = 5, color = "black"
   ) +
   
-  # Manual color for iRECIST
+  #color for iRECIST
   scale_color_manual(values = c(
     "CR" = "#6a3d9a",  
     "PR" = "#1f78b4",  
@@ -106,7 +106,7 @@ timeline_plot <- ggplot(clinical_data, aes(y = PatientID)) +
     "Unknown" = "orange"
   )) +
   
-  # Manual shape for OS censoring/event
+  #shape for OS censoring/event
   scale_shape_manual(values = c("0" = 1, "1" = 16),
                      labels = c("Censored", "Event"),
                      name = "OS Status") +
@@ -126,7 +126,7 @@ timeline_plot <- ggplot(clinical_data, aes(y = PatientID)) +
     legend.text = element_text(size = 22),
     plot.title = element_text(size = 34, face = "bold", hjust = 0.5),
     
-    # 👇 force background to white
+    #force background to white
     panel.background = element_rect(fill = "white", color = NA),
     plot.background = element_rect(fill = "white", color = NA),
     

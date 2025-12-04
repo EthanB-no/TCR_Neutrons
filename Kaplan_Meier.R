@@ -4,6 +4,8 @@ library(readr)
 library(survminer)
 library(survival)
 
+
+##NOTE this script is note used for any figures in the paper
 # Load data
 clinical_data <- read_csv("./swimmer_plot.csv")
 
@@ -112,6 +114,8 @@ p1 <- ggsurvplot(fit, data = clinical_data,
            conf.int = FALSE,
            legend = "none",
            censor = TRUE)
+
+p1
 
 ggsave(
   "Swimmmer_plot_new.png", 

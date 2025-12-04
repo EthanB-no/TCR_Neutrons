@@ -1,5 +1,7 @@
 library(dplyr)
 library(readxl)
+
+##NOTE this script is not used for any figures in the paper
 imm_meta <- read_xlsx("PatientID.xlsx") 
 
 sample_meta <- read.delim("./SampleOverview_11-19-2025_10-47-53_PM.tsv")

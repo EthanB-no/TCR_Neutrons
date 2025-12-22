@@ -114,7 +114,7 @@ p4 <- p4 + guides(fill = "none")
 
 combined_plot <- (p1 + p2) / (p3 + p4) +
   plot_layout(guides = "collect") &
-  theme(legend.position = "bottom", guides(fill = "none"))
+  theme(legend.position = "bottom", guides(fill = "none"), plot.title = element_text(face = "bold"))
 
 combined_plot
 

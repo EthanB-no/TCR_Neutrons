@@ -87,7 +87,7 @@ make_boxplot <- function(df, xvar, yvar, title, ylab) {
 # Figures
 p1 <- make_boxplot(gini_response,
                    "Response_Group", "Value",
-                   "Gini-Simpson Index by Response",
+                   "Gini Index by Response",
                    "Gini-Simpson Value")
 
 p2 <- make_boxplot(convergence_with_response,
@@ -100,7 +100,7 @@ p1 + p2
 
 combined_plot <- p1 + p2 + 
   plot_layout(guides = "collect") & 
-  theme(legend.position = "right") 
+  theme(legend.position = "right", plot.title = element_text(face = "bold", size = 26)) 
 combined_plot
 
 ggsave(
@@ -121,7 +121,8 @@ p_line_gini <- ggplot(gini_response,
   scale_x_discrete(limits = c("Pre-TX", "Post Rad", "4 Week", "16 Week")) +
   labs(title = "Longitudinal Gini-Simpson Diversity", 
        y = "Gini-Simpson Index", x = "Timepoint") +
-  theme_classic(base_size = 20)
+  theme_classic(base_size = 20) & 
+  theme(plot.title = element_text(face = "bold"))
 
 # Convergence over time
 p_line_conv <- ggplot(convergence_with_response, 
@@ -131,7 +132,8 @@ p_line_conv <- ggplot(convergence_with_response,
   scale_x_discrete(limits = c("Pre-TX", "Post Rad", "4 Week", "16 Week")) +
   labs(title = "Longitudinal Convergent Clonotypes", 
        y = "# Convergent Clonotypes", x = "Timepoint") +
-  theme_classic(base_size = 20)
+  theme_classic(base_size = 20) & 
+  theme(plot.title = element_text(face = "bold"))
 
 # Combine
 p_line_gini + p_line_conv

@@ -41,7 +41,7 @@ clonality_annotated <-subset(clonality_annotated, UC_status != "BN") %>%
 
 clonality_annotated <-subset(clonality_annotated, Dataset != "Zhang") 
 
-#clonality_annotated <- subset(clonality_annotated, Arm == "neoadjuvant")
+clonality_annotated <- subset(clonality_annotated, Arm == "concurrent" | Arm == "Hutch")
 # Convergence
 # Flatten + clean
 combined <- bind_rows(purrr::imap(imm_data_sub, function(df, sname) {
@@ -84,12 +84,12 @@ convergence_with_response <-subset( convergence_with_response, Dataset != "Zhang
 make_boxplot <- function(df, xvar, yvar, title, ylab) {
   ggplot(df, aes_string(x = xvar, y = yvar, fill = xvar)) +
     geom_boxplot(outlier.shape = NA, alpha = 0.8, size = .8) +
-    geom_jitter(aes(color = as.factor(PatientID)), width = 0.15, size = 4) +
-    labs(title = title, x = "Cohort", y = ylab, color = "Patient ID") +
+    geom_jitter(aes(color = as.factor(PatientID)), show.legend = FALSE, width = 0.15, size = 4) +
+    labs(title = title, x = "Cohort", y = ylab, color = "Cohort") +
     theme_classic2(base_size = 22) +
     stat_compare_means(
       method = "wilcox.test",
-      label = "p.format",
+      label = "p.signif",
       size = 10,
       bracket.size = 1.5,
       comparisons = list(c("Hutch", "Atezo")),
@@ -102,7 +102,7 @@ make_boxplot <- function(df, xvar, yvar, title, ylab) {
 # Figures
 p1 <- make_boxplot(clonality_annotated,
                    "Dataset", "Value",
-                   "Gini-Simpson Index by Cohort",
+                   "Gini Index by Cohort",
                    "Gini-Simpson Value")
 
 p2 <- make_boxplot(convergence_with_response,
@@ -115,13 +115,16 @@ p1 + p2
 
 combined_plot <- p1 + p2 + 
   plot_layout(guides = "collect") & 
-  theme(legend.position = "right") 
+  theme(legend.position = "right", plot.title = element_text(face = "bold", size = 26)) &
+  theme(axis.text = element_text(size = 26))
+        
+
 combined_plot
 
 ggsave(
-  "combined_plot.png", 
+  "combined_COHORT_plot.png", 
   plot = combined_plot, 
-  width = 19, height = 12, 
+  width = 15, height = 12, 
   dpi = 800  # 600 DPI is publication quality
 )
 ###############################

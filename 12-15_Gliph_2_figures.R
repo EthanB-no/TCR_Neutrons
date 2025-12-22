@@ -39,3 +39,28 @@ convergent_clonotypes <- combined %>%
 convergent_clusters <- inner_join(convergent_clonotypes, gliph_2_clusters, by = c("CDR3.aa" = "TcRb"))
 
 
+cluster_burden <- convergent_clusters %>%
+  group_by(PatientID, Timepoint, type) %>%
+  summarise(
+    n_convergent = n(),
+    .groups = "drop"
+  )
+
+cluster_burden <- filter(cluster_burden, n_convergent >= 15) %>%
+  
+
+p1 <- ggplot(cluster_burden,
+             aes(x = Timepoint, y = n_convergent, group = PatientID)) +
+  geom_line(alpha = 0.4) +
+  geom_point(size = 2) +
+  facet_wrap(~ type, scales = "free_y") +
+  theme_classic() +
+  labs(
+    y = "Number of convergent clonotypes",
+    x = NULL,
+    title = "Convergent TCR clonotypes within GLIPH2 clusters"
+  )
+
+p1
+
+

@@ -2,13 +2,13 @@
 
 ### **Project guide:**
 
-Figure 1b: Swim_plot.R, Swim plot of cohort
+Figure 1b: Swim_plot.R- Swim plot of cohort
 
-Figure 3: 11-17_convergence_gini_combined_plots.R, TCR convergence and diversity plots
+Figure 3: 11-17_convergence_gini_combined_plots.R- TCR convergence and diversity plots
 
-Figure 4: 11-17_Cytokine_combined_plot.R, cytokine plot
+Figure 4: 11-17_Cytokine_combined_plot.R- cytokine plot
 
-Figure 5: 11-17_Hutch_cohort_comparison.R, Atezolizumab trial comparison plots
+Figure 5: 11-17_Hutch_cohort_comparison.R- Atezolizumab trial comparison plots
 
 ### **Supplemental figures**
 

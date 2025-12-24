@@ -41,7 +41,8 @@ clonotype_annotated <- clonotype_data %>%
 
 patient_ids <- unique(clonotype_annotated$PatientID)
 
-pid <- list("1", "2", "3")
+#data storage
+all_clonotype_status <- list()
 
 for (pid in patient_ids){
   patient_data <- clonotype_annotated %>% filter(PatientID == pid) %>%
@@ -52,7 +53,9 @@ for (pid in patient_ids){
     group_by(Timepoint, CDR3.aa) %>%
     summarise(Clones = sum(Clones), .groups = "drop")
   
-    
+  message("Processing patient: ", pid)
+  
+
   
   clonotype_tracked_patient <- clonotype_for_pivot %>%
     
@@ -60,18 +63,19 @@ for (pid in patient_ids){
       names_from = Timepoint,
       values_from = Clones,
       names_prefix = "Clones_"
-    ) %>%
+    ) 
+  
+  if (!all(c("Clones_Pre-TX", "Clones_4 Week") %in% colnames(clonotype_tracked_patient))) {
+    message("Skipping patient ", pid, ": missing 4 Week or Pre-TX")
+    next
+  }
     
     # Handle missing clonotypes (replace NA with 0)
-    mutate(
+  clonotype_tracked_patient <- clonotype_tracked_patient %>% mutate(
       `Clones_Pre-TX` = replace_na(`Clones_Pre-TX`, 0),
       `Clones_4 Week` = replace_na(`Clones_4 Week`, 0)
     )
   
-  if (!all(c("Clones_Pre-TX", "Clones_4 Week") %in% colnames(clonotype_tracked_patient))) {
-    message("Skipping patient ", pid, ": missing timepoint")
-    next
-  }
   
   if (sum(clonotype_tracked_patient$`Clones_Pre-TX`) == 0 ||
       sum(clonotype_tracked_patient$`Clones_4 Week`) == 0) {
@@ -84,21 +88,22 @@ for (pid in patient_ids){
   
   clonotype_analysis_patient <- clonotype_tracked_patient %>%
     mutate(
-      # Calculate proportions
-      Prop_PreTX = `Clones_Pre-TX` / N_pretx,
-      Prop_4Week = `Clones_4 Week` / N_4week,
+      ###NOTE SWITCHING FROM PROPORTIONS TO LOG coiunts
+      # Calculate proportions 
+      #Prop_PreTX = `Clones_Pre-TX` / N_pretx,
+      #Prop_4Week = `Clones_4 Week` / N_4week,
       
       # Define a minimum proportion (pseudo-count) for FC calculation stability
-      min_prop = min(Prop_PreTX[Prop_PreTX > 0]) / 10,
+      #min_prop = min(Prop_PreTX[Prop_PreTX > 0]) / 10,
       
-      # Calculate Fold Change (FC)
-      FC = (Prop_4Week + min_prop) / (Prop_PreTX + min_prop),
+      # Calculate Fold Change (FC) IN RAW COUNTS
+      FC = log2((`Clones_4 Week` + 1) / (`Clones_Pre-TX` + 1)),
       
       # Classify the clonotype's fate
       Status = case_when(
         # Significantly Expanded/Contracted (must be present in both)
-        FC > 1.5 & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Expanded (FC > 1.5)",
-        FC < 0.5 & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Contracted (FC < 0.5)",
+        FC > log2(1.5) & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Expanded (FC > 1.5)",
+        FC < log2(0.5) & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Contracted (FC < 0.5)",
         # New/Lost clonotypes (only in one time point)
         `Clones_Pre-TX` == 0 & `Clones_4 Week` > 0 ~ "New (Post-TX)",
         `Clones_Pre-TX` > 0 & `Clones_4 Week` == 0 ~ "Lost (Post-TX)",
@@ -154,6 +159,61 @@ for (pid in patient_ids){
   
   
   
-  ggsave(filename = "patient_1_clonotype_tracking.png", device = png, plot = scatter_plot_colored, dpi = 400, scale = 1, unit = "in", width = 8,
-       height = 8)
+ ggsave(
+  filename = paste0("patient_", pid, "_clonotype_tracking.png"),
+  plot = scatter_plot_colored,
+  dpi = 400,
+  width = 8,
+  height = 8,
+  units = "in"
+  )
+ 
+
+ # Add patient column
+ clonotype_analysis_patient$PatientID <- pid
+ 
+ # Store in the list
+ all_clonotype_status[[pid]] <- clonotype_analysis_patient %>%
+   select(PatientID, CDR3.aa, Status)
+ 
 }
+
+cohort_status <- bind_rows(all_clonotype_status)  # combine list into one dataframe
+
+
+cohort_status <- cohort_status %>%
+  mutate(FateGroup = case_when(
+    Status %in% c("Expanded", "New (Post-TX)") ~ "Expanded/New",
+    Status %in% c("Contracted", "Lost (Post-TX)") ~ "Contracted/Lost",
+    TRUE ~ "Unchanged"
+  ))
+
+status_summary <- cohort_status %>%
+  filter(FateGroup != "Unchanged") %>%  # optional, remove unchanged
+  group_by(FateGroup) %>%
+  summarise(Count = n(), .groups = "drop")
+
+
+p1 <- ggplot(status_summary, aes(x = FateGroup, y = Count, fill = FateGroup)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Expanded/New" = "orange", "Contracted/Lost" = "royalblue")) +
+  labs(
+    title = "Cohort-level Clonotype Fate: Pre-TX vs Week 4",
+    x = "Clonotype Fate Group",
+    y = "# of Clonotypes"
+  ) +
+  theme_classic(base_size = 16) +
+  theme(plot.title = element_text(hjust = .35, face = "bold", size = 18)) +
+  theme(legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12))
+
+p1
+
+ggsave(
+  filename =("cohort_level_clonotype_fate.png"),
+  plot = p1,
+  dpi = 400,
+  width = 6,
+  height = 6,
+  units = "in"
+  )

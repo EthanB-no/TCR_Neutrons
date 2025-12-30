@@ -4,63 +4,65 @@ library(readxl)
 library(ggpubr)
 library(patchwork)
 
-
-
-imm_data <- repLoad("./Combined_data/")
-imm_meta <- read_xlsx("PatientID.xlsx") 
+#imm_data <- repLoad("./Combined_data/")
+#imm_meta <- read_xlsx("PatientID.xlsx") 
 gliph_2_clusters <- read_csv("GLIPH_output_new.csv")
 
-gliph_2_clusters <- select(gliph_2_clusters, Fisher_score, Sample, TcRb, type)
+timepoint_levels <- c("Pre-TX", "Post Rad", "4 Week", "16 Week")
 
-imm_data_filt <- imm_data
-imm_data_filt$data <- imm_data$data[!grepl("_TCRB$", names(imm_data$data))]
+# Step 1: Compute patient-normalized proportions
+cluster_patient <- gliph_2_clusters %>%
+  mutate(
+    Patient = sub(":.*", "", Sample),
+    Timepoint = str_trim(sub(".*:", "", Sample)),
+    Timepoint = factor(Timepoint, levels = timepoint_levels)
+  ) %>%
+  filter(pattern != "single") %>%
+  filter(!is.na(Timepoint)) %>%   # drops malformed labels safely
+  group_by(Patient, Timepoint, pattern) %>%
+  summarise(total_freq = sum(Freq, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Patient, Timepoint) %>%
+  mutate(prop = total_freq / sum(total_freq)) %>%
+  ungroup()
 
-# Convergence
-# Flatten + clean
-combined <- bind_rows(purrr::imap(imm_data_filt$data, function(df, sname) {
-  df %>%
-    mutate(
-      Sample = sname,
-      PatientID = imm_meta$PatientID[imm_meta$Sample == sname],
-      Timepoint = imm_meta$Timepoint[imm_meta$Sample == sname]
-    )
-})) %>% filter(!is.na(CDR3.aa), !is.na(CDR3.nt))
 
-convergent_clonotypes <- combined %>%
-  group_by(PatientID, Timepoint, CDR3.aa) %>%
-  filter(n_distinct(CDR3.nt) > 1) %>%   # convergence definition
+cluster_timepoint <- cluster_patient %>%
+  group_by(Timepoint, pattern) %>%
   summarise(
-    nt_sequences = list(unique(CDR3.nt)),
-    num_unique_nt = n_distinct(CDR3.nt),
-    total_clones = sum(Clones),
+    mean_prop = mean(prop, na.rm = TRUE),
+    n_patients = n_distinct(Patient),
     .groups = "drop"
   )
 
-convergent_clusters <- inner_join(convergent_clonotypes, gliph_2_clusters, by = c("CDR3.aa" = "TcRb"))
+top15_per_timepoint <- cluster_timepoint %>%
+  group_by(Timepoint) %>%
+  slice_max(order_by = mean_prop, n = 8, with_ties = FALSE) %>%
+  ungroup()
 
-
-cluster_burden <- convergent_clusters %>%
-  group_by(PatientID, Timepoint, type) %>%
-  summarise(
-    n_convergent = n(),
-    .groups = "drop"
-  )
-
-cluster_burden <- filter(cluster_burden, n_convergent >= 15) %>%
-  
-
-p1 <- ggplot(cluster_burden,
-             aes(x = Timepoint, y = n_convergent, group = PatientID)) +
-  geom_line(alpha = 0.4) +
-  geom_point(size = 2) +
-  facet_wrap(~ type, scales = "free_y") +
-  theme_classic() +
+p1 <- ggplot(top15_per_timepoint,
+       aes(x = Timepoint, y = mean_prop, fill = pattern)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::percent_format()) +
   labs(
-    y = "Number of convergent clonotypes",
-    x = NULL,
-    title = "Convergent TCR clonotypes within GLIPH2 clusters"
+    x = "Timepoint",
+    y = "Mean Cluster Abundance",
+    fill = "GLIPH-2 motif",
+    title = "Top 8 GLIPH-2 clusters per timepoint"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12)
   )
-
-p1
-
-
+p1 
+ggsave(
+  filename =("Gliph-2_clusters_over_time.png"),
+  plot = p1,
+  dpi = 400,
+  width = 6,
+  height = 6,
+  units = "in"
+)

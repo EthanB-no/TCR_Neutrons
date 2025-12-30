@@ -102,7 +102,7 @@ for (pid in patient_ids){
       # Classify the clonotype's fate
       Status = case_when(
         # Significantly Expanded/Contracted (must be present in both)
-        FC > log2(1.5) & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Expanded (FC > 1.5)",
+        FC > log2(1) & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Expanded (FC > 1.5)",
         FC < log2(0.5) & `Clones_Pre-TX` >= 1 & `Clones_4 Week` >= 1 ~ "Contracted (FC < 0.5)",
         # New/Lost clonotypes (only in one time point)
         `Clones_Pre-TX` == 0 & `Clones_4 Week` > 0 ~ "New (Post-TX)",
@@ -178,27 +178,58 @@ for (pid in patient_ids){
  
 }
 
-cohort_status <- bind_rows(all_clonotype_status)  # combine list into one dataframe
+cohort_status <- bind_rows(all_clonotype_status) %>%
+  mutate(
+    FateGroup = case_when(
+      Status %in% c("Expanded (FC > 1.5)", "New (Post-TX)") ~ "Expanded/New",
+      Status %in% c("Contracted (FC < 0.5)", "Lost (Post-TX)") ~ "Contracted/Lost",
+      TRUE ~ "Unchanged"
+    ),
+    Subgroup = case_when(
+      Status == "Expanded (FC > 1.5)" ~ "Expanded",
+      Status == "New (Post-TX)" ~ "New",
+      Status == "Contracted (FC < 0.5)" ~ "Contracted",
+      Status == "Lost (Post-TX)" ~ "Lost",
+      TRUE ~ NA_character_
+    )
+  )
 
-
-cohort_status <- cohort_status %>%
-  mutate(FateGroup = case_when(
-    Status %in% c("Expanded", "New (Post-TX)") ~ "Expanded/New",
-    Status %in% c("Contracted", "Lost (Post-TX)") ~ "Contracted/Lost",
-    TRUE ~ "Unchanged"
-  ))
 
 status_summary <- cohort_status %>%
   filter(FateGroup != "Unchanged") %>%  # optional, remove unchanged
-  group_by(FateGroup) %>%
+  group_by(FateGroup, Subgroup) %>%
   summarise(Count = n(), .groups = "drop")
 
 
-p1 <- ggplot(status_summary, aes(x = FateGroup, y = Count, fill = FateGroup)) +
+per_patient_summary <- cohort_status %>%
+  filter(FateGroup %in% c("Expanded/New", "Contracted/Lost")) %>%
+  group_by(PatientID, FateGroup) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  pivot_wider(names_from = FateGroup, values_from = Count, values_fill = 0)
+
+wilcox.test(per_patient_summary$`Expanded/New`, per_patient_summary$`Contracted/Lost`, paired = TRUE)
+
+
+ggplot(status_summary, aes(x = FateGroup, y = Count, fill = Subgroup)) +
   geom_bar(stat = "identity") +
-  scale_fill_manual(values = c("Expanded/New" = "orange", "Contracted/Lost" = "royalblue")) +
+  scale_y_log10() +
+  annotation_logticks(sides = "l") +
   labs(
-    title = "Cohort-level Clonotype Fate: Pre-TX vs Week 4",
+    title = "Cohort-level clonotype fate (log scale)",
+    y = "Clonotype count (log10)"
+  )
+
+
+p1 <- ggplot(status_summary, aes(x = FateGroup, y = Count, fill = Subgroup)) +
+  geom_bar(stat = "identity") + scale_y_log10() +
+  annotation_logticks(sides = "l") +
+  scale_fill_manual(values =c(
+    "New" = "red", 
+    "Expanded" = "orange",
+    "Lost" = "black", 
+    "Contracted" = "royalblue")) +
+  labs(
+    title = "Cohort-level Clonotype Fate: Week 4 vs Pre-TX",
     x = "Clonotype Fate Group",
     y = "# of Clonotypes"
   ) +

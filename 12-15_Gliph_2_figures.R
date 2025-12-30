@@ -51,18 +51,22 @@ p1 <- ggplot(top15_per_timepoint,
   ) +
   theme_classic(base_size = 14) +
   theme(
-    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
+    plot.title = element_text(face = "bold", size = 28, hjust = 0.5),
     axis.title = element_text(size = 16),
     axis.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
+    legend.title = element_text(face = "bold", size = 14),
     legend.text = element_text(size = 12)
+  ) + theme(legend.position = "bottom") + theme(
+    legend.key.width = unit(0.4, "cm")
   )
+
+
 p1 
 ggsave(
   filename =("Gliph-2_clusters_over_time.png"),
   plot = p1,
-  dpi = 400,
-  width = 6,
-  height = 6,
+  dpi = 500,
+  width = 9,
+  height = 10,
   units = "in"
 )

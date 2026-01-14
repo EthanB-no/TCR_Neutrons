@@ -25,7 +25,7 @@ ginisimp <- repDiversity(imm_data_sub, .method = "gini.simp")
 
 clonality_annotated <- ginisimp %>%
   left_join(
-    imm_meta %>% select(Sample, PatientID, Timepoint, Response, Dataset, UC_status, Arm, ),
+    imm_meta %>% select(Sample, PatientID, Timepoint, Response, Dataset, Arm ),
     by = "Sample"
   ) %>% 
   mutate(Timepoint = factor(Timepoint,
@@ -33,7 +33,7 @@ clonality_annotated <- ginisimp %>%
 
 clonality_annotated <- subset(clonality_annotated, Timepoint != "Pre-TX"  | is.na(Timepoint))
 
-clonality_annotated <-subset(clonality_annotated, UC_status != "BN") %>%
+clonality_annotated <-subset(clonality_annotated) %>%
   mutate(Dataset = case_when(
     Dataset %in% c("FH") ~ "Hutch",
     Dataset %in% c("Z") ~ "Zhang",
@@ -44,14 +44,10 @@ clonality_annotated <-subset(clonality_annotated, Dataset != "Zhang")
 clonality_annotated <- subset(clonality_annotated, Arm == "concurrent" | Arm == "Hutch")
 # Convergence
 # Flatten + clean
-combined <- bind_rows(purrr::imap(imm_data_sub, function(df, sname) {
-  df %>%
-    mutate(
-      Sample = sname,
-      PatientID = imm_meta$PatientID[imm_meta$Sample == sname],
-      Timepoint = imm_meta$Timepoint[imm_meta$Sample == sname],
-    )
-})) %>% filter(!is.na(CDR3.aa), !is.na(CDR3.nt))
+combined <- bind_rows(purrr::imap(imm_data_sub, ~ mutate(.x, Sample = .y))) %>%
+  left_join(imm_meta, by = "Sample") %>%
+  filter(!is.na(CDR3.aa), !is.na(CDR3.nt))
+
 
 # Convergence summary
 convergence_summary <- combined %>%
@@ -76,7 +72,9 @@ convergence_with_response <- convergence_summary %>%
   )) %>%
   distinct(PatientID, num_convergent_clonotypes, .keep_all = TRUE)
 
-convergence_with_response <-subset( convergence_with_response, UC_status != "BN") 
+convergence_with_response <- convergence_with_response %>%
+  filter(UC_status != "BN", Arm == "concurrent" | Arm == "Hutch")
+
 
 convergence_with_response <-subset( convergence_with_response, Dataset != "Zhang") 
 #convergence_with_response <-subset( convergence_with_response, Arm == "concurrent") 
@@ -92,7 +90,7 @@ make_boxplot <- function(df, xvar, yvar, title, ylab) {
       label = "p.signif",
       size = 10,
       bracket.size = 1.5,
-      comparisons = list(c("Hutch", "Atezo")),
+      comparisons = list(c("Hutch", "concurrent")),
       hide.ns = FALSE,
       vjust = 0.1   # push the stars slightly downward
     )

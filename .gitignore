@@ -13,3 +13,4 @@ renv/
 *.Rprofile
 *.DS_Store
 .Rproj.user
+.RDataTmp

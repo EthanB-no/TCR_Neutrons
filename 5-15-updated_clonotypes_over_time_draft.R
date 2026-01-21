@@ -308,3 +308,13 @@ ggsave(
   units = "in"
 )
 
+library(glmmTMB)
+
+model <- glmmTMB(
+  Count ~ FateGroup * Timepoint + (1 | PatientID),
+  family = nbinom2,
+  data = status_by_patient
+)
+
+summary(model)
+

@@ -194,3 +194,67 @@ ggsave(
 )
 
 arm_combined_plot
+
+make_arm_violin <- function(df, yvar, title, ylab) {
+  ggplot(df, aes(x = Arm, y = .data[[yvar]], fill = Arm)) +
+    geom_violin(
+      trim = FALSE,
+      alpha = 0.85,
+      linewidth = 0.9
+    ) +
+    geom_jitter(
+      aes(color = as.factor(PatientID)),
+      width = 0.15,
+      size = 5
+    ) +
+    labs(
+      title = title,
+      x = "Trial Arm",
+      y = ylab,
+      color = "Patient ID"
+    ) +
+    theme_classic2(base_size = 28) +
+    stat_compare_means(
+      method = "wilcox.test",
+      label = "p.format",
+      size = 8,
+      hide.ns = FALSE,
+      bracket.size = 1.3,
+      comparisons = list(
+        c("neoadjuvant", "concurrent"),
+        c("neoadjuvant", "Hutch"),
+        c("concurrent", "Hutch")
+      )
+    )
+}
+
+p_gini_arm <- make_arm_violin(
+  clonality_annotated,
+  "Value",
+  "Gini-Simpson Diversity by Trial Arm",
+  "Gini-Simpson Index"
+)
+
+p_conv_arm <- make_arm_violin(
+  convergence_with_response,
+  "num_convergent_clonotypes",
+  "TCR Convergence by Trial Arm",
+  "Number of Convergent Clonotypes"
+)
+
+
+
+arm_combined_plot <- p_gini_arm + p_conv_arm +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "right", plot.title = element_text(face = "bold", size = 30)) &
+  theme(axis.text = element_text(size = 26))
+
+arm_combined_plot
+
+ggsave(
+  "VIOLIN_arm_comparison_plot.png",
+  plot = arm_combined_plot,
+  width = 19,
+  height = 12,
+  dpi = 800
+)
